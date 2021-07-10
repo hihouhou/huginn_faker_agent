@@ -3,8 +3,6 @@ require 'faker'
 module Agents
   class FakerAgent < Agent
     include FormConfigurable
-#
-#    gem_dependency_check { defined?(faker) }
 
     can_dry_run!
     no_bulk_receive!
@@ -13,12 +11,10 @@ module Agents
     description do
       <<-MD
       The huginn catalog agent checks if new campaign is available.
-#
-#      #{'## Include the `faker` gem in your `Gemfile` to use faker Agents.' if dependencies_missing?}
 
       `debug` is used to verbose mode.
 
-      `country` is for generating data from specifiq country, like us.
+      `country` is for generating data from specifiq country, like fr.
 
       `is_male` is for generating data from specifiq gender.
 
@@ -55,14 +51,24 @@ module Agents
 
     def default_options
       {
-        'debug' => 'False',
-        'country' => 'us',
-        'is_male' => 'True',
+        'country' => 'fr',
+        'debug' => 'false',
+        'is_male' => 'true',
+        'first_name' => 'true',
+        'last_name' => 'true',
+        'full_address' => 'false',
+        'blood_group' => 'false',
+        'job_title' => 'false',
+        'phone_number' => 'false',
+        'birth_date' => 'false',
+        'btc_address' => 'false',
+        'eth_address' => 'false',
+        'twitter_account' => 'false',
       }
     end
 
     form_configurable :debug, type: :boolean
-    form_configurable :country, type: :boolean
+    form_configurable :country, type: :array, values: ['fr', 'ro', 'en', 'es', 'it']
     form_configurable :is_male, type: :boolean
     form_configurable :first_name, type: :boolean
     form_configurable :last_name, type: :boolean
@@ -81,32 +87,44 @@ module Agents
       end
     end
 
-#    def working?
-#    end
+    def working?
+      event_created_within?(options['expected_receive_period_in_days']) && !recent_error_logs?
+    end
 
-    def doit
+    def check
       generate
     end
 
     private
 
     def generate
-      
-      Faker::Config.locale = :interpolated['country']
+      case interpolated['country']
+      when "us"
+        Faker::Config.locale = :ro
+      when "fr"
+        Faker::Config.locale = :fr
+      when "en"
+        Faker::Config.locale = :en
+      when "es"
+        Faker::Config.locale = :es
+      when "it"
+        Faker::Config.locale = :it
+      end
+
 
       if interpolated['debug'] == 'true'
-        logs "contry is #{interpolated['country']}"
+        log "country is #{interpolated['country']}"
       end      
       
-      if (is_male)
+      if interpolated['is_male'] == 'true'
         then
           if interpolated['debug'] == 'true'
-            logs "You're a male"
+            log "You're a male"
           end      
           first_name = Faker::Name.male_first_name
         else
           if interpolated['debug'] == 'true'
-            logs "You're a female"
+            log "You're a female"
           end      
           first_name = Faker::Name.female_first_name
       end
@@ -115,61 +133,61 @@ module Agents
       json["first_name"] = "#{first_name}"
       if interpolated['first_name'] == 'true'
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end 
       end 
       if interpolated['last_name'] == 'true'
         json["last_name"] = "#{Faker::Name.last_name}"
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end
       end 
       if interpolated['full_address'] == 'true'
         json["full_address"] = "#{Faker::Address.full_address}"
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end      
       end 
       if interpolated['blood_group'] == 'true'
         json["blood_group"] = "#{Faker::Blood.group}"
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end      
       end 
       if interpolated['job_title'] == 'true'
         json["job_title"] = "#{Faker::Job.title}"
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end      
       end 
       if interpolated['phone_number'] == 'true'
         json["phone_number"] = "#{Faker::PhoneNumber.phone_number_with_country_code}"
         if interpolated['debug'] == 'true'
-      logs "#{json}"
+          log "#{json}"
         end      
       end 
       if interpolated['birth_date'] == 'true'
         json["birth_date"] = "#{Faker::Date.birthday(min_age: 18, max_age: 45)}"
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end      
       end 
       if interpolated['btc_address'] == 'true'
         json["btc_address"] = "#{Faker::Blockchain::Bitcoin.address}"
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end      
       end 
       if interpolated['eth_address'] == 'true'
         json["eth_address"] = "#{Faker::Blockchain::Ethereum.address}"
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end      
       end 
       if interpolated['twitter_account'] == 'true'
         json["twitter_account"] = "#{Faker::Twitter.user}"
         if interpolated['debug'] == 'true'
-          logs "#{json}"
+          log "#{json}"
         end      
       end 
       create_event payload: json

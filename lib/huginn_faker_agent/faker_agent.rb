@@ -45,8 +45,9 @@ module Agents
 
     event_description <<-MD
       Events look like this:
-        {
-        }
+
+          {
+          }
     MD
 
     def default_options
